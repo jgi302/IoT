@@ -36,12 +36,12 @@ def pkt_handler(payload):
             byte_payload = bytes(pkt[scapy.TCP].payload)
             list_payload = list(byte_payload)
 
-            bogus_payload = [68, 65, 69, 68]
+            bogus_payload = [68, 69, 65, 68]
             for i in range(payload_len):
                 if i < len(bogus_payload):
-                    list_payload[len(list_payload) - (i + 2)] = bogus_payload[i]
+                    list_payload[len(list_payload) - (payload_len + 1) + i] = bogus_payload[i]
                 else:
-                    list_payload[len(list_payload) - (i + 2)] = 32
+                    list_payload[len(list_payload) - (payload_len + 1) + i] = 32
 
             byte_payload = bytes(list_payload)
             new_payload = byte_payload
