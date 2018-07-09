@@ -58,6 +58,7 @@ def main():
 
     if(len(sys.argv) != 4):
         print('error, sample invocation is: $python3 mitm.py <interface> <target_address> <gateway_address>')
+        sys.exit(-1)
 
     INTERFACE = sys.argv[1]   # Network Interface to use
     TARGET_IP = sys.argv[2]   # Raspberry Pi w/ MySignals

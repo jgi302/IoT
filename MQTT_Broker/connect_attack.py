@@ -12,6 +12,7 @@ def main():
 
     if(len(sys.argv) != 3):
         print('error, sample invocation is: $python3 connect_attack.py <broker_address> <port>')
+        sys.exit(-1)
 
     host_specified = sys.argv[1]            # Broker Address.
     port_specified = sys.argv[2]            # Broker Port.
